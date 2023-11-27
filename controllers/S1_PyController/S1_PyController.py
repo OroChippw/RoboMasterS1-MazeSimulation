@@ -2,7 +2,7 @@
 
 # You may need to import some classes of the controller module. Ex:
 #  from controller import Robot, Motor, DistanceSensor
-from controller import Robot , Keyboard
+from controller import Robot , Keyboard , Display
 from math import sin , cos
 
 MAX_SPEED = 15
@@ -40,6 +40,8 @@ w = 0 # angular velocity (w) , Positive are counterclockwise
 def Mecanum_Calculator(Vx , Vy , w , idx , max_velocity=None):
     motorVelocity = [0 , 0 , 0 , 0]
     R = 1 # Mecanum radius
+    distance_x = 0.18
+    distance_y = 0.25
     Vx_robot = Vx * cos(w) - Vy * sin(w)
     Vy_robot = Vx * sin(w) + Vy * cos(w)
     # motorVelocity[0] = Vy - Vx + w * (R)
@@ -84,13 +86,15 @@ def main():
     timestep = int(robot.getBasicTimeStep())
     print(f"[INFO] Get timestep : {timestep}")
     
-    # <------ Component Motor Mapping ------>
+    # <------ Component Motor/Sensor Mapping ------>
     # Gets the robot's keyboard device and robot's camera device
     keyboard = robot.getKeyboard()
     keyboard.enable(1)
     
-    maincamera = robot.getDevice('camera')
+    maincamera = robot.getDevice('shooter_camera')
     maincamera.enable(timestep)
+    # maincamera.setFocalDistance(0.01) # Set FocalLength
+    
     width = maincamera.getWidth()
     height = maincamera.getHeight()
     print(f"[INFO] Main Timestep : {timestep} , Width : {width} , Height : {height}")
@@ -116,18 +120,21 @@ def main():
     wheels = []
     wheels_sensors = []
     wheelsMaxSpeeds = []
-    wheelsMotorNames = ['wheel_fr_motor', 'wheel_fl_motor', 'wheel_bl_motor', 'wheel_br_motor']
+    wheels_MotorNames = ['wheel_fr_motor', 'wheel_fl_motor', 'wheel_bl_motor', 'wheel_br_motor']
     wheels_SensorNames = ['wheel_fr_sensor', 'wheel_fl_sensor', 'wheel_bl_sensor', 'wheel_br_sensor']
-    
-    for idx in range(len(wheelsMotorNames)):
+    # assert len(wheels_MotorNames) == len(wheels_SensorNames) , f""
+        
+    for idx in range(len(wheels_MotorNames)):
         # wheels.append(robot.getMotor(wheelsNames[idx]))
-        wheels.append(robot.getDevice(wheelsMotorNames[idx]))
+        wheels.append(robot.getDevice(wheels_MotorNames[idx]))
         wheels_sensors.append(robot.getDevice(wheels_SensorNames[idx]))
         
         wheelsMaxSpeeds.append(wheels[idx].getMaxVelocity())
         wheels[idx].setPosition(float('inf'))
         wheels[idx].setVelocity(0.0)
-    print(f"wheelsMaxSpeeds : {wheelsMaxSpeeds}")
+    print(f"[INFO] wheelsMaxSpeeds : {wheelsMaxSpeeds}")
+    
+    
     
     changed = False
     
@@ -135,9 +142,9 @@ def main():
     # perform simulation steps until Webots is stopping the controller
     while robot.step(timestep) != -1:
         # Get sensors outputs
-        dsValues = []
-        # for idx in range(len(dsNames)):
-        #     dsValues.append(distance_sensor_list[idx].getValue())
+        sensor_values = []
+        # for idx in range(len(wheels_sensors)):
+        #     sensor_values.append(wheels_sensors[idx].getValue())
         # left_obstacle = dsValues[0] > OBSTACLE_THESHOLD
         # right_obstacle = dsValues[1] > OBSTACLE_THESHOLD
         # if left_obstacle :
@@ -226,6 +233,7 @@ def main():
                 changed = False
                 
         if (changed):
+            # Vy, Vx, w = 0, 0, 0 // TODO
             print(f"w:{w} ; fr:{Mecanum_Calculator(Vx,Vy,w,0,wheelsMaxSpeeds[0])} ; fl:{Mecanum_Calculator(Vx,Vy,w,1,wheelsMaxSpeeds[1])}")
             print(f"bl:{Mecanum_Calculator(Vx,Vy,w,2,wheelsMaxSpeeds[2])} ; br:{Mecanum_Calculator(Vx,Vy,w,3,wheelsMaxSpeeds[3])}")
         
