@@ -7,31 +7,57 @@ from math import sin , cos
 
 MAX_SPEED = 15
 SENSOR_THRESHOLD = 70 # sensitivity of sensors surrounding robot for obstacle detection
-MAX_PITCH_ANGLE = 60
 
-def Instructions_Intro():
-    '''
-        Prints instructions for controlling the robot using the keyboard and mouse.
-    '''
-    print("<------ [DEMO] RoboMaster S1 Maze Simulation ------>")
-    
-    print("<------ [START] instructions for controlling the robot [START] ------>")
-    print("[INFO] Please use keyboard to control RoboMaster S1")
-    print("[INFO] [W - Go Ahead] [S - Back] [A - Pan Left] [D - Pan Right]")
-    print("[INFO] [→ - YAW axis rotates counterclockwise]")
-    print("[INFO] [← - YAW axis rotates clockwise]")
-    print("[INFO] [↑ - Pitch axis raised]")
-    print("[INFO] [↓ - Pitch axis down]")
-    print("<------ [END] instructions for controlling the robot [END] ------>")
-    
-    return
+class RobotController():
+    def __init__(self , robot , timestep ,max_speed=15 , sensor_threshold=70) -> None:
+        # Properties
+        self.robot = robot
+        self.timestep = timestep
+        self.status_changed = False
+        
+        self.Vx = 0
+        self.Vy = 0
+        self.w = 0
+        
+        # Device 、Motors and Sensors
+        self.keyboard = None
+        self.maincarema = None
+        self
+        
+        # Thresholds
+        self.max_speed = max_speed
+        self.sensor_threshold = sensor_threshold
+        
+        self._init_component()
+        
+    def _stop(self):
+        for idx in range(len(wheelsNames)):
+            wheels[idx].setVelocity(0.0)
+            
+        return wheels
 
+    def _instructions_intro(self):
+        '''
+            Prints instructions for controlling the robot using the keyboard and mouse.
+        '''
+        print("<------ [DEMO] RoboMaster S1 Maze Simulation ------>")
+        print("<------ [START] instructions for controlling the robot [START] ------>")
+        print("[INFO] Please use keyboard to control RoboMaster S1")
+        print("[INFO] [W - Go Ahead] [S - Back] [A - Pan Left] [D - Pan Right]")
+        print("[INFO] [→ - YAW axis rotates counterclockwise]")
+        print("[INFO] [← - YAW axis rotates clockwise]")
+        print("[INFO] [↑ - Pitch axis raised]")
+        print("[INFO] [↓ - Pitch axis down]")
+        print("<------ [END] instructions for controlling the robot [END] ------>")
+        
+        return
 
-def stop(wheelsNames , wheels):
-    for idx in range(len(wheelsNames)):
-        wheels[idx].setVelocity(0.0)
-    
-    return wheels
+    def _init_component(self , maincarema_name='shooter_camera'):
+        self.keyboard = self.robot.getKeyboard()
+        self.keyboard.enable(1)
+        self.maincarema = self.robot.getDevice(maincarema_name)
+        self.maincamera.enable(self.timestep)
+        pass
 
 # <------ Calculate Individual wheel ------>
 Vx = Vy= 0 # linear velocities (Vx and Vy) , Positive are ahead and right
@@ -44,18 +70,18 @@ def Mecanum_Calculator(Vx , Vy , w , idx , max_velocity=None):
     distance_y = 0.25
     Vx_robot = Vx * cos(w) - Vy * sin(w)
     Vy_robot = Vx * sin(w) + Vy * cos(w)
-    # motorVelocity[0] = Vy - Vx + w * (R)
-    # motorVelocity[1] = Vy + Vx - w * (R)
-    # motorVelocity[2] = Vy - Vx - w * (R)
-    # motorVelocity[3] = Vy + Vx + w * (R)
-    if idx == 0:
-        motorVelocity[0] = Vy_robot - Vx_robot + w * (R)
-    elif idx == 1:
-        motorVelocity[1] = Vy_robot + Vx_robot - w * (R)
-    elif idx == 2:
-        motorVelocity[2] = Vy_robot - Vx_robot - w * (R)
-    elif idx == 3:
-        motorVelocity[3] = Vy_robot + Vx_robot + w * (R)
+    motorVelocity[0] = Vy - Vx + w * (R)
+    motorVelocity[1] = Vy + Vx - w * (R)
+    motorVelocity[2] = Vy - Vx - w * (R)
+    motorVelocity[3] = Vy + Vx + w * (R)
+    # if idx == 0:
+    #     motorVelocity[0] = Vy_robot - Vx_robot + w * (R)
+    # elif idx == 1:
+    #     motorVelocity[1] = Vy_robot + Vx_robot - w * (R)
+    # elif idx == 2:
+    #     motorVelocity[2] = Vy_robot - Vx_robot - w * (R)
+    # elif idx == 3:
+    #     motorVelocity[3] = Vy_robot + Vx_robot + w * (R)
     # print(Vx_robot , Vy_robot , motorVelocity)
     if max_velocity is not None:    
         for i in range(len(motorVelocity)):
@@ -64,27 +90,17 @@ def Mecanum_Calculator(Vx , Vy , w , idx , max_velocity=None):
     
     return motorVelocity[idx]
 
-# <------ Distance Sensor Settings ------>
-# distance_sensor_list = []
-# dsNames = ['ds_left' , 'ds_right']
-# for idx in range(len(dsNames)):
-#     if robot.getDevice(dsNames[idx]) :
-#         # distance_sensor_list.append(robot.getDistanceSensor(dsNames[idx]))
-#         distance_sensor_list.append(robot.getDevice(dsNames[idx]))
-#         distance_sensor_list[idx].enable(timestep)
-#     else :
-#         print("[WARNINGS] Can't get any distance sensors")
-
-
-def main():
-    # <------ Instructions Introduction ------>
-    Instructions_Intro()
     
+def main():
     # <------ Instructions Introduction ------>
     # create the Robot instance.
     robot = Robot()
     timestep = int(robot.getBasicTimeStep())
     print(f"[INFO] Get timestep : {timestep}")
+    
+    # <------ Init Robot Controller and show Instructions Introduction ------>
+    robot_controller = RobotController(robot , MAX_SPEED , SENSOR_THRESHOLD)
+    robot_controller._instructions_intro()
     
     # <------ Component Motor/Sensor Mapping ------>
     # Gets the robot's keyboard device and robot's camera device
@@ -103,118 +119,98 @@ def main():
     yaw_motor = robot.getDevice('yaw_motor')
     yaw_motor.setPosition(float('inf'))
     yaw_motor.setVelocity(0.0)
+    yaw_sensor = robot.getDevice('yaw_sensor')
+    yaw_sensor.enable(timestep)
 
+    target_pitch_angle = 0.0
     pitch_motor = robot.getDevice('pitch_motor')
     pitch_motor.setPosition(float('inf'))
     pitch_motor.setVelocity(0.0)
+    pitch_sensor = robot.getDevice("pitch_sensor")
+    pitch_sensor.enable(timestep)
 
     '''
         Gets the motors for controlling the wheels
-        # 1-------0
+        # 0-------2
         #     |
         #     |
         #     |
-        # 2-------3
-        [0-fr-front right] [1-fl-front left] [2-bl-back left] [3-br-back left] 
+        # 1-------3
+        [0-fl-front left] [1-bl-back left] [2-fr-front right] [3-br-back left] 
     '''
-    wheels = []
+    wheels_motors = []
     wheels_sensors = []
     wheelsMaxSpeeds = []
-    wheels_MotorNames = ['wheel_fr_motor', 'wheel_fl_motor', 'wheel_bl_motor', 'wheel_br_motor']
-    wheels_SensorNames = ['wheel_fr_sensor', 'wheel_fl_sensor', 'wheel_bl_sensor', 'wheel_br_sensor']
-    # assert len(wheels_MotorNames) == len(wheels_SensorNames) , f""
+    wheels_MotorNames = ['wheel_fl_motor', 'wheel_bl_motor', 'wheel_fr_motor', 'wheel_br_motor']
+    wheels_SensorNames = ['wheel_fl_sensor', 'wheel_bl_sensor', 'wheel_fr_sensor', 'wheel_br_sensor']
+    assert len(wheels_MotorNames) == len(wheels_SensorNames) , \
+        f"[ERROR] The number of motors and sensors of the transmission wheel should be same"
         
     for idx in range(len(wheels_MotorNames)):
         # wheels.append(robot.getMotor(wheelsNames[idx]))
-        wheels.append(robot.getDevice(wheels_MotorNames[idx]))
+        wheels_motors.append(robot.getDevice(wheels_MotorNames[idx]))
         wheels_sensors.append(robot.getDevice(wheels_SensorNames[idx]))
         
-        wheelsMaxSpeeds.append(wheels[idx].getMaxVelocity())
-        wheels[idx].setPosition(float('inf'))
-        wheels[idx].setVelocity(0.0)
+        wheelsMaxSpeeds.append(wheels_motors[idx].getMaxVelocity())
+        wheels_motors[idx].setPosition(float('inf'))
+        wheels_motors[idx].setVelocity(0.0)
     print(f"[INFO] wheelsMaxSpeeds : {wheelsMaxSpeeds}")
     
+    # <------ Component Motor/Sensor Mapping ------>
     
-    
-    changed = False
     
     # <------ Main loop ------>
     # perform simulation steps until Webots is stopping the controller
     while robot.step(timestep) != -1:
         # Get sensors outputs
         sensor_values = []
-        # for idx in range(len(wheels_sensors)):
-        #     sensor_values.append(wheels_sensors[idx].getValue())
-        # left_obstacle = dsValues[0] > OBSTACLE_THESHOLD
-        # right_obstacle = dsValues[1] > OBSTACLE_THESHOLD
-        # if left_obstacle :
-        #     print("[INFO] There is an obstacle on the left")
-        # if right_obstacle :
-        #     print("[INFO] There is an obstacle on the right")
-
-        avoidObstacleCounter = 0    
+        avoidObstacleCounter = 0
         index = -1
     
         key = keyboard.getKey()
         if (key == ord('W')):
-            Vy = 5
-            if(index != 0) : 
-                print("[INFO] Go Ahead")
-                index = 0
-                changed = True
-            else :
-                changed = False
+            Vx = Vy = 5
+            index = 0
         elif (key == ord('S')):
-            Vy = -5
-            if(index != 1) : 
-                print("[INFO] Back")
-                index = 1
-                changed = True
-            else :
-                changed = False
+            Vx = Vy = -5
+            index = 1
         elif (key == ord('D')):
             Vx = 5
-            Vy = 0.0
-            w = 0
-            if(index != 2) : 
-                print("[INFO] Pan Right")
-                index = 2
-                changed = True
-            else :
-                changed = False
+            Vy = -5
+            index = 2    
+            changed = True
+            
         elif (key == ord('A')):
             Vx = -5
-            Vy = 0.0
-            w = 0
-            if(index != 3) : 
-                print("[INFO] Pan Left")
-                index = 3
-                changed = True
-            else :
-                changed = False
-                
-        elif (key == ord('Q')):
-            w = 1.0
-            if (index != 4):
-                index = 4
-                print("[INFO] Rotate counterclockwise")
-                changed = True
-            else :
-                changed = False
-        elif (key == ord('E')):
-            w = -1.0
-            if (index != 5):
-                index = 5
-                print("[INFO] Rotate clockwise")
-                changed = True
-            else :
-                changed = False
+            Vy = 5
+            index = 3
+            changed = True
+               
+        
+        # elif (key == ord('Q')):
+        #     w = 1.0
+        #     if (index != 4):
+        #         index = 4
+        #         print("[INFO] Rotate counterclockwise")
+        #         changed = True
+        #     else :
+        #         changed = False
+        # elif (key == ord('E')):
+        #     w = -1.0
+        #     if (index != 5):
+        #         index = 5
+        #         print("[INFO] Rotate clockwise")
+        #         changed = True
+        #     else :
+        #         changed = False
         elif (key==Keyboard.UP):
             pitch_motor.setVelocity(-1.0)
-            print('[INFO] Pitch axis raised')
+            current_pitch_angle = pitch_sensor.getValue()
+            print(f"[INFO] Pitch axis raised , Current pitch angle of the pitch_motor is {current_pitch_angle}")
         elif (key==Keyboard.DOWN):
             pitch_motor.setVelocity(1.0)
-            print('[INFO] Pitch axis down')  
+            current_pitch_angle = pitch_sensor.getValue()
+            print(f"[INFO] Pitch axis down , Current pitch angle of the pitch_motor is {current_pitch_angle}")
         elif (key==Keyboard.LEFT):
             yaw_motor.setVelocity(1.0)
             print('[INFO] YAW axis rotates clockwise')  
@@ -225,22 +221,32 @@ def main():
             Vy, Vx, w = 0, 0, 0
             pitch_motor.setVelocity(0)
             yaw_motor.setVelocity(0)
-            if (index != -1):
-                print('[INFO] Stop')
-                index = -1
-                changed = True
-            else :
-                changed = False
-                
-        if (changed):
-            # Vy, Vx, w = 0, 0, 0 // TODO
-            print(f"w:{w} ; fr:{Mecanum_Calculator(Vx,Vy,w,0,wheelsMaxSpeeds[0])} ; fl:{Mecanum_Calculator(Vx,Vy,w,1,wheelsMaxSpeeds[1])}")
-            print(f"bl:{Mecanum_Calculator(Vx,Vy,w,2,wheelsMaxSpeeds[2])} ; br:{Mecanum_Calculator(Vx,Vy,w,3,wheelsMaxSpeeds[3])}")
+            wheels_motors[0].setVelocity(0)
+            wheels_motors[1].setVelocity(0)
+            wheels_motors[2].setVelocity(0)
+            wheels_motors[3].setVelocity(0)
+            index = -1
+
         
-        wheels[0].setVelocity(Mecanum_Calculator(Vx,Vy,w,0,wheelsMaxSpeeds[0]))
-        wheels[1].setVelocity(Mecanum_Calculator(Vx,Vy,w,1,wheelsMaxSpeeds[1]))
-        wheels[2].setVelocity(Mecanum_Calculator(Vx,Vy,w,2,wheelsMaxSpeeds[2]))
-        wheels[3].setVelocity(Mecanum_Calculator(Vx,Vy,w,3,wheelsMaxSpeeds[3]))
+        if (index == 0 or index == 1):
+            wheels_motors[0].setVelocity(Vx)
+            wheels_motors[1].setVelocity(Vx)
+            wheels_motors[2].setVelocity(Vy)
+            wheels_motors[3].setVelocity(Vy)
+            # if changed:
+            #     print(f"[INFO] fl:{Vx} ; bl:{Vx} ; fr :{Vy} ; br : {Vy}")
+        elif (index == 2 or index == 3):
+            wheels_motors[0].setVelocity(Vx)
+            wheels_motors[1].setVelocity(Vy)
+            wheels_motors[2].setVelocity(Vy)
+            wheels_motors[3].setVelocity(Vx)
+            # if changed:
+            #     print(f"[INFO] fl:{Vy} ; bl:{Vx} ; fr :{Vx} ; br : {Vy}")
+            #     print(f"[INFO] fl:{Vx} ; bl:{Vy} ; fr :{Vy} ; br : {Vx}")
+                
+       
+        
+        
         
         
 if __name__ == '__main__':
