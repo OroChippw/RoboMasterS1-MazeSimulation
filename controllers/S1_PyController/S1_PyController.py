@@ -98,7 +98,7 @@ class RobotController():
         self.max_speed = speed
     
     def _get_Image(self):
-        return
+        return self.maincarema.getImage()
         
     def _init_component(self , maincarema_name='shooter_camera'):
         '''
@@ -118,6 +118,7 @@ class RobotController():
         self.width = self.maincarema.getWidth()
         self.height = self.maincarema.getHeight()
         print(f"[INFO] Width : {self.width} , Height : {self.height}")
+        
         
         # Gets the motors for controlling the yaw and pitch movements
         self.yaw_motor = self.robot.getDevice('yaw_motor')
@@ -145,7 +146,10 @@ class RobotController():
         return 
     
     def _keyboard_catcher(self , key=None):
-        self.current_key = self.keyboard.getKey()
+        if key is not None:
+            self.current_key = key
+        else:
+            self.current_key = self.keyboard.getKey()
         
         if (self.current_key == ord('W')):
             self.Vx = self.Vy = 5
@@ -154,12 +158,12 @@ class RobotController():
             self.Vx = self.Vy = -5
             self.status = "Backward"
         elif (self.current_key == ord('D')):
-            self.Vx = 5
-            self.Vy = -5
-            self.status = "Pan Right"
-        elif (self.current_key == ord('A')):
             self.Vx = -5
             self.Vy = 5
+            self.status = "Pan Right"
+        elif (self.current_key == ord('A')):
+            self.Vx = 5
+            self.Vy = -5
             self.status = "Pan Left"
         elif (self.current_key == ord("Q")):
             self.w = 1.0
@@ -207,7 +211,6 @@ class RobotController():
                 print(f"[INFO] fl:{self.Vx} ; bl:{self.Vy} ; fr :{self.Vy} ; br : {self.Vx}")
         
   
-    
     def _Mecanum_Calculator(self , Vx , Vy , w , idx , max_velocity=None):
         motorVelocity = [0 , 0 , 0 , 0]
         R = 1 # Mecanum radius
@@ -235,10 +238,13 @@ class RobotController():
         
         return motorVelocity[idx]
 
-def algorithm():
-    '''
-    '''
-    return
+    def _explore_maze_algorithm(self):
+        '''
+            Func :
+            Args : 
+            Return : ASCII
+        '''
+        return None
     
     
 def main():
@@ -254,10 +260,10 @@ def main():
     # <------ Main loop ------>
     # perform simulation steps until Webots is stopping the controller
     while robot.step(timestep) != -1:
-        robot_controller._keyboard_catcher()
+        command = robot_controller._explore_maze_algorithm()
+        robot_controller._keyboard_catcher(command)
         robot_controller._set_Mecanum_Velocoty()
         
-
             
 if __name__ == '__main__':
     main()

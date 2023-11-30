@@ -6,16 +6,18 @@
 import random
 import os.path as osp
 
+
 class MazeGenerator():
-    def __init__(self , m=4 , n=4 , title_size=0.1 , 
+    def __init__(self , m=4 , n=4 , title_size=10 , 
                  save_path="output" , save_name="maze.wbt") -> None:
         self.maze = None
         self.m = m
         self.n = n        
         self.M = 2 * m + 1
         self.N = 2 * n + 1
+        
         self.title_size = title_size
-        self.unit_size = title_size / 2
+        self.unit_size = title_size / 20
         
         self.save_path = save_path
         self.save_name = save_name
@@ -37,11 +39,19 @@ class MazeGenerator():
         # print(f"[ERROR] Couldn't find the index ({x} , {y})")
         
         return -1
-            
+    
+    def _get_filename(self):
+        return self.filename
+    
     def _create_maze(self):
         n_visited = 0
         m = self.n
         n = self.n
+        
+        start_x = self.M - 2
+        start_y = self.N - 2
+        end_x = 1
+        end_y = 1
         
         cell_list = [
             (k, (i, j)) for k, (i, j) in enumerate(
@@ -49,6 +59,7 @@ class MazeGenerator():
         ]
         stack = []
         visited = [False] * (m * n)
+        
         
         top_left = (((m // 2) - 1) * n) + (n // 2) - 1
         top_right = top_left + 1
@@ -105,8 +116,8 @@ class MazeGenerator():
         
         while n_visited < (self.m * self.n):
             neighbours = []
-
-             # North
+            
+            # North
             if stack[-1][1][0] > 1:
                 if self.maze[stack[-1][1][0] - 2][stack[-1][1][1] + 0] and not visited[self._get_idx(stack[-1][1][0] - 2, stack[-1][1][1] + 0, cell_list)]:
                     neighbours.append(0)
@@ -123,6 +134,9 @@ class MazeGenerator():
                 if self.maze[stack[-1][1][0] + 0][stack[-1][1][1] - 2] and not visited[self._get_idx(stack[-1][1][0] + 0, stack[-1][1][1] - 2, cell_list)]:
                     neighbours.append(3)
 
+            # Remove neighbours that are already in the stack
+            # neighbours = [dir for dir in neighbours if cell_list[self._get_idx(stack[-1][1][0] + (dir == 2) - (dir == 0), stack[-1][1][1] + (dir == 1) - (dir == 3), cell_list)][0] not in stack]
+            
             if neighbours:
                 next_cell_dir = random.choice(neighbours)
 
@@ -144,14 +158,19 @@ class MazeGenerator():
                 n_visited += 1
             else:
                 stack.pop()
+            
+        self.maze[start_x + 1][start_y] = ' '
+        self.maze[end_x - 1][end_y] = ' '
+
+        return 
         
     def _display_maze(self):
-        filename = osp.join(self.save_path , self.save_name)
-        with open(filename  , "w") as out:
+        self.filename = osp.join(self.save_path , self.save_name)
+        with open(self.filename  , "w") as out:
             out.write(
                 "#VRML_SIM R2023b utf8 \n\n"
                 "EXTERNPROTO \"../protos/RectangleArena.proto\" \n"
-                "EXTERNPROTO \"../protos/MazeWall.proto\" \n"
+                "EXTERNPROTO \"../protos/S1_Robot.proto\" \n"
                 "EXTERNPROTO \"https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/backgrounds/protos/TexturedBackgroundLight.proto\" \n"
                 "EXTERNPROTO \"https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/backgrounds/protos/TexturedBackground.proto\" \n"
                 "EXTERNPROTO \"https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/apartment_structure/protos/Wall.proto\" \n\n"
@@ -202,20 +221,23 @@ class MazeGenerator():
             )
             
             counter = 0
-            for i in range(1 , self.M - 1):
-                for j in range(0 , self.N - 1):
-                    if (self.maze[i][j] == '#' and self.maze[i][j + 1] == '#') or (False and 0 < j and maze[i][j - 1] == '#' and maze[i][j] == '#'):
+            # Horizontal
+            for i in range(self.M):
+                for j in range(self.N - 1):
+                    if (self.maze[i][j] == '#' and self.maze[i][j + 1] == '#'):
+                        size_x = 0.5 if self.maze[i][j] == '#' and self.maze[i][j + 1] == '#' else 0.01
                         out.write(
-                            f"MazeWall {{  \n translation {(j + 0.5) * self.unit_size} 0 {i * self.unit_size} \n name \"maze wall({counter})\" \n}}\n"
+                            f"Wall {{  \n translation {(-j - 0.5 + self.N / 2) * self.unit_size}  {(i - self.M / 2) * self.unit_size} 0 \n rotation 0 1 0 0 \n size {size_x} 0.1 0.4 \n name \" wall({counter})\" \n}}\n"
                         )
                         counter += 1
             
-        
+            # Vertical
             for i in range(self.M - 1):
-                for j in range(1 , self.N - 1):
-                    if (self.maze[i][j] == '#' and self.maze[i + 1][j] == '#') or (False and 0 < i and self.maze[i - 1][j] == '#' and maze[i][j] == '#'):
+                for j in range(self.N):
+                    if (self.maze[i][j] == '#' and self.maze[i + 1][j] == '#'):
+                        size_y = 0.5 if self.maze[i][j] == '#' and self.maze[i + 1][j] == '#' else 0.01
                         out.write(
-                            f"MazeWall {{\n  translation {j * self.unit_size} 0 {(i + 0.5) * self.unit_size} \n  rotation 0 1 0 -1.570796326 \n name \"maze wall({counter})\" \n  }}\n"
+                            f"Wall {{\n  translation {(-j + self.N / 2) * self.unit_size} {(i + 0.5 - self.M / 2) * self.unit_size} 0 \n  rotation 0 1 0 0 \n  size 0.1 {size_y} 0.4 \n name \" wall({counter})\" \n  }}\n"
                         )
                         counter += 1
             
@@ -223,8 +245,32 @@ class MazeGenerator():
             for j in range(self.N):
                 print(self.maze[i][j], end=' ')
             print()
+    
+    # def _generate_robot(self , robot_filepath):
+    #     """
+    #         Func : 
+            
+    #         Args : 
+            
+    #         Return : 
+            
+    #     """
+    #     assert robot_filepath.lower().endswith(".txt"), \
+    #         f"[ERROR] "
+    #     with open(robot_filepath , "r") as robot_file , open(self.filename , 'w') as out:
+    #         for line in robot_file:
+    #             modified_line = line.replace('"', r'\"')
+    #             modified_line = '"' + modified_line.strip() + '\\n"\n'
+    #             out.write(modified_line)
+                
+    #     print("[INFO] Here's the robot you asked for. A maze.wbt has been created. Enjoy! :D")
+        
+    #     return 
                 
 def main():
+    # <------ Parameter Settings ------>
+    # GENERATE_ROBOT = False
+    
     print("[INFO] Maze Generator")
     m = int(input("[INPUT] Enter the number of rows (greater than 4): "))
     n = int(input("[INPUT] Enter the number of columns (greater than 4): "))
@@ -236,11 +282,16 @@ def main():
         
     print(f"[INFO] Generate a {m} x {n} maze")
     
+    # <------ Maze Generate ------>
     maze_generator = MazeGenerator(m , n)
     
     maze_generator._create_maze()
     print("[INFO] Here's the maze you asked for. A maze.wbt has been created. Enjoy! :D")
     maze_generator._display_maze()  
- 
+    
+    # if GENERATE_ROBOT:
+    #     robot_filepath = "RoboMasterS1.txt"
+    #     maze_generator._generate_robot(robot_filepath)
+    
 if __name__ == '__main__':
     main()
