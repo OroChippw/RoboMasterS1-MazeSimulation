@@ -170,7 +170,6 @@ class MazeGenerator():
             out.write(
                 "#VRML_SIM R2023b utf8 \n\n"
                 "EXTERNPROTO \"../protos/RectangleArena.proto\" \n"
-                "EXTERNPROTO \"../protos/S1_Robot.proto\" \n"
                 "EXTERNPROTO \"https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/backgrounds/protos/TexturedBackgroundLight.proto\" \n"
                 "EXTERNPROTO \"https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/backgrounds/protos/TexturedBackground.proto\" \n"
                 "EXTERNPROTO \"https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/apartment_structure/protos/Wall.proto\" \n\n"
