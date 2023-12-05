@@ -14,24 +14,17 @@ SENSOR_THRESHOLD = 70 # sensitivity of sensors surrounding robot for obstacle de
 
 class RobotController():
     '''
-        RoboMaster S1
+        The RobotController of RoboMaster S1
         # 0-------2
         #     |
         #     |
         #     |
         # 1-------3
-        [0-fl-front left] [1-bl-back left] [2-fr-front right] [3-br-back left] 
+        [0-fl-front left] [1-bl-back left] [2-fr-front right] [3-br-back right] 
     '''
     def __init__(self , robot , mode=None , timestep=32 ,max_speed=15 , 
                  sensor_threshold=70) -> None:
-        '''
-            Func:
-            Args:
-            Return:
-                None
-        '''
         # <------ Properties ------>
-        
         self.robot = robot
         self.robot_name = "RoboMaster S1"
         self.timestep = timestep
@@ -84,10 +77,10 @@ class RobotController():
         print("[INFO] #     |")
         print("[INFO] #     |")
         print("[INFO] # 1-------3")
-        print("[INFO] [0-fl-front left] [1-bl-back left] [2-fr-front right] [3-br-back left] ")
+        print("[INFO] [0-fl-front left] [1-bl-back left] [2-fr-front right] [3-br-back right] ")
         print("<------ [START] instructions for controlling the robot [START] ------>")
         print("[INFO] Please use keyboard to control RoboMaster S1")
-        print("[INFO] [W - Go Ahead] [S - Back] [A - Pan Left] [D - Pan Right]")
+        print("[INFO] [W - Forward] [S - Backward] [A - Pan Left] [D - Pan Right]")
         print("[INFO] [→ - YAW axis rotates counterclockwise]")
         print("[INFO] [← - YAW axis rotates clockwise]")
         print("[INFO] [↑ - Pitch axis raised]")
@@ -97,7 +90,6 @@ class RobotController():
         return
     
     def _reset_Velocity(self):
-        
         self.pitch_motor.setVelocity(0)
         self.yaw_motor.setVelocity(0)
         for idx in range(len(self.wheels_Motors)):
@@ -118,7 +110,7 @@ class RobotController():
     def _init_component(self , maincarema_name='shooter_camera'):
         '''
             Func:
-                Component Motor/Sensor Mapping
+                Complete the initialization of model components (motors, sensors, etc.)
             Args:
                 maincarema_name : default : "shooter_camera" 
             Return:
@@ -174,7 +166,9 @@ class RobotController():
     def _keyboard_catcher(self , key=None):
         '''
             Func:
+                Capture/simulate keyboard input signals
             Args:
+                key : When key is not None, expect to receive ASCII code to simulate keyboard input. default : None
             Return:
                 None
         '''
@@ -197,12 +191,12 @@ class RobotController():
             self.Vx = 5
             self.Vy = -5
             self.status = "Pan Left"
-        elif (self.current_key == ord("Q")):
-            self.w = 1.0
-            self.status = "Rotate Counterclockwise"
-        elif (self.current_key == ord('E')):
-            self.w = -1.0
-            self.status = "Rotate Clockwise"
+        # elif (self.current_key == ord("Q")):
+        #     self.w = 1.0
+        #     self.status = "Rotate Counterclockwise"
+        # elif (self.current_key == ord('E')):
+        #     self.w = -1.0
+        #     self.status = "Rotate Clockwise"
         elif (self.current_key == Keyboard.UP):
             self.pitch_motor.setVelocity(-1.0)
             self.current_pitch_angle = self.pitch_sensor.getValue()
@@ -227,12 +221,6 @@ class RobotController():
         self.temp = self.status
 
     def _set_Mecanum_Velocoty(self):
-        '''
-            Func:
-            Args:
-            Return:
-                None
-        '''
         if (self.status == "Forward" or self.status == "Backward"):
             self.wheels_Motors[0].setVelocity(self.Vx)
             self.wheels_Motors[1].setVelocity(self.Vx)
@@ -251,9 +239,11 @@ class RobotController():
     def _get_Sensors_Values(self , idx):
         '''
             Func:
+                Get the value of the corresponding sensor according to the corresponding index 
             Args:
+                idx : required , The index value of the target sensor
             Return:
-                None
+                the value of the corresponding sensor
         '''
         # for idx in range(len(self.wheels_Motors)):
         #     self.wheels_SensorsValues.append(self.wheels_Sensors[idx].getValue())
@@ -265,9 +255,12 @@ class RobotController():
     
     def _explore_maze_algorithm(self):
         '''
-            Func :
+            Func : 
+                Get any available information to complete the maze exploration
             Args : 
-            Return : ASCII
+                any value you want to use for maze exploration,such as sensor values, camera images, etc.
+            Return : 
+                ASCII/Other
         '''
         return None
     
