@@ -5,7 +5,7 @@
   <div style="display: flex; justify-content: center;">
     <img src="assets/RoboMasterS1.jpg" width="400" style="margin-right: 5px;"/>
     <img src="assets/Maze01_TopView.jpg" width="400" style="margin-right: 5px;"/>
-    <img src="assets/Maze01_CAD.jpg" width="300" />
+    <!-- <img src="assets/Maze01_CAD.jpg" width="300" /> -->
   </div>
 </div>
 
