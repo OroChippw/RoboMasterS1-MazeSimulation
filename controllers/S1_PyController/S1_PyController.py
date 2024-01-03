@@ -6,7 +6,7 @@
 
 # You may need to import some classes of the controller module. Ex:
 #  from controller import Robot, Motor, DistanceSensor
-from controller import Robot , Keyboard , Display
+from controller import Robot , Keyboard , Display , Supervisor
 from math import sin , cos
 
 MAX_SPEED = 15
@@ -26,7 +26,7 @@ class RobotController():
                  sensor_threshold=70) -> None:
         # <------ Properties ------>
         self.robot = robot
-        self.robot_name = "RoboMaster S1"
+        self.robot_name = "RoboMasterS1"
         self.timestep = timestep
         self.status = None
         self.temp = None
@@ -36,8 +36,13 @@ class RobotController():
             'wheel_bl_motor', 'wheel_fr_motor', 'wheel_br_motor']
         self.wheels_SensorNames = ['wheel_fl_sensor', 
             'wheel_bl_sensor', 'wheel_fr_sensor', 'wheel_br_sensor']
+        self.body_SensorNames = ["top_sensor"]
         assert len(self.wheels_MotorNames) == len(self.wheels_SensorNames) , \
-        f"[ERROR] The number of motors and sensors of the transmission wheel should be same"
+            f"[ERROR] The number of motors and sensors of the transmission wheel should be same"
+        
+        self.supervisor = Supervisor()
+        self.robot_node = None
+        self.translation_field = None
         
         # linear velocities (Vx and Vy) , Positive are ahead and right
         self.Vx = 0 
@@ -53,8 +58,10 @@ class RobotController():
         self.maincarema = None
         self.wheels_Motors = []
         self.wheels_Sensors = []
+        self.body_Sensors = []
         self.wheels_MaxSpeeds = []
         self.wheels_SensorsValues = []
+        self.top_SensorValue = []
         self.yaw_motor = None
         self.pitch_motor = None
         
@@ -120,6 +127,9 @@ class RobotController():
             self.timestep = int(self.robot.getBasicTimeStep())
             print(f"[INFO] Get Main timestep : {self.timestep}")
             
+            self.robot_name = self.robot.getName()
+            print(f"[INFO] Robot Name : {self.robot_name}")
+            
             # Gets the robot's keyboard device and robot's camera device
             self.keyboard = self.robot.getKeyboard()
             self.keyboard.enable(1)
@@ -154,9 +164,19 @@ class RobotController():
                 self.wheels_Motors[idx].setVelocity(0.0)
                 
                 self.wheels_Sensors[idx].enable(self.timestep)
-                
+            
+            for idx in range(len(self.body_SensorNames)):
+                self.body_Sensors.append(self.robot.getDevice(self.body_SensorNames[idx]))
+                self.body_Sensors[idx].enable(self.timestep)
+             
             print(f"[INFO] Complete initialization of sensors and motors")
-            print(f"[INFO] wheelsMaxSpeeds : {self.wheels_MaxSpeeds}")
+            print(f"[INFO] WheelsMaxSpeeds : {self.wheels_MaxSpeeds}")
+            
+            self.robot_node = self.supervisor.getFromDef(self.robot_name)
+            if self.robot_node is not None:
+                self.translation_field = self.robot_node.getField('translation')        
+            else:
+                print("[INFO] Robot node not found.")
             
         except Exception as e:
             print("[ERROR] ", e)
@@ -191,12 +211,12 @@ class RobotController():
             self.Vx = 5
             self.Vy = -5
             self.status = "Pan Left"
-        # elif (self.current_key == ord("Q")):
-        #     self.w = 1.0
-        #     self.status = "Rotate Counterclockwise"
-        # elif (self.current_key == ord('E')):
-        #     self.w = -1.0
-        #     self.status = "Rotate Clockwise"
+        elif (self.current_key == ord("Q")):
+            self.w = 1.0
+            self.status = "Rotate Counterclockwise"
+        elif (self.current_key == ord('E')):
+            self.w = -1.0
+            self.status = "Rotate Clockwise"
         elif (self.current_key == Keyboard.UP):
             self.pitch_motor.setVelocity(-1.0)
             self.current_pitch_angle = self.pitch_sensor.getValue()
@@ -236,7 +256,7 @@ class RobotController():
             if self.statusChanged:
                 print(f"[INFO] fl:{self.Vx} ; bl:{self.Vy} ; fr :{self.Vy} ; br : {self.Vx}")
     
-    def _get_Sensors_Values(self , idx):
+    def _get_Sensors_Values(self , idx = None , compont = None):
         '''
             Func:
                 Get the value of the corresponding sensor according to the corresponding index 
@@ -249,11 +269,26 @@ class RobotController():
         #     self.wheels_SensorsValues.append(self.wheels_Sensors[idx].getValue())
         # print("[INFO] WheelSensorsValues : " , self.wheels_SensorsValues)
         
-        idx_sensor_values = self.wheels_Sensors[idx].getValue()
+        if (compont == "wheels"):
+            idx_sensor_values = self.wheels_Sensors[idx].getValue()
+        elif (compont == "body"):
+            idx_sensor_values = self.body_Sensors[idx].getValue()
+        else :
+            
+            idx_sensor_values = 0
         
         return idx_sensor_values 
     
-    def _explore_maze_algorithm(self):
+    def _get_Position(self):
+        try:
+            if self.robot_node is not None:
+                robot_position = self.translation_field.getSFVec3f()
+        except Exception as e:
+            print("[ERROR] " , e)
+        
+        return robot_position
+    
+    def _explore_maze_algorithm(self , direction=0 , distance=0 ,operateThreshold=2):
         '''
             Func : 
                 Get any available information to complete the maze exploration
@@ -262,6 +297,7 @@ class RobotController():
             Return : 
                 ASCII/Other
         '''
+        
         return None
     
     
@@ -270,20 +306,78 @@ def main():
     # create the Robot instance.
     robot = Robot()
     timestep = int(robot.getBasicTimeStep())
+    robot.step(100)
     
+    # <------ Init Maze Information ------>
+    wall_nodes = []
+    min_coords = [float('inf'), float('inf'), float('inf')]
+    max_coords = [-float('inf'), -float('inf'), -float('inf')]
+    
+    maze_supervisor = Supervisor()
+    maze_group = maze_supervisor.getFromDef('Maze01')
+    maze_size = [float('inf'), float('inf'), float('inf')] # length、width、height
+    if maze_group is not None:
+        print(f"[INFO] Maze_group getCount() : " , maze_group.getField('children').getCount())
+        for idx in range(maze_group.getField('children').getCount()):
+            node = maze_group.getField('children').getMFNode(idx)
+            if (node.getTypeName().lower() == "wall"):
+                wall_nodes.append(node)
+        
+        for wall_node in wall_nodes:
+            wall_name = wall_node.getField('name').getSFString()
+            wall_position = wall_node.getPosition()
+            # print(f"[INFO] WALL Name: {wall_name}, Position: {wall_position}")
+            for i in range(3):
+                min_coords[i] = min(min_coords[i], wall_position[i])
+                max_coords[i] = max(max_coords[i], wall_position[i])
+
+        center_point = [(min_coords[i] + max_coords[i]) / 2 for i in range(3)]
+        maze_size[0] = max_coords[0] - min_coords[0]
+        maze_size[1] = max_coords[1] - min_coords[1]
+        maze_size[2] = (max_coords[2] + min_coords[2]) / 2
+
+        print("[INFO] Maze Center Point: X: {:.2f}, Y: {:.2f}, Z: {:.2f}".format(*center_point))
+        print("[INFO] Maze Length: {:.2f} , Width: {:.2f} , Height : ".format(maze_size[0] , maze_size[1] , maze_size[2]))
+    else :
+        print("[INFO] Maze Group is None")
+    
+   
     # <------ Init Robot Controller and show Instructions Introduction ------>
-    robot_controller = RobotController(robot , max_speed=MAX_SPEED , sensor_threshold=SENSOR_THRESHOLD)
+    robot_controller = RobotController(
+        robot , max_speed=MAX_SPEED , sensor_threshold=SENSOR_THRESHOLD)
     robot_controller._instructions_intro()
-    
+    initial_robot_global_position = robot_controller._get_Position()
+    # exit(0)
     # <------ Main loop ------>
     # perform simulation steps until Webots is stopping the controller
     while robot.step(timestep) != -1:
         command = robot_controller._explore_maze_algorithm()
         robot_controller._keyboard_catcher(command)
         robot_controller._set_Mecanum_Velocoty()
-        sensor_values = robot_controller._get_Sensors_Values(idx = 0)
-        print(f"[INFO] sensor_values : {sensor_values}")
+            
+        body_sensor_values = robot_controller._get_Sensors_Values(idx = 0 , compont="body")
+        print("[INFO] Body Front-mid values : {:.2f}".format(body_sensor_values))
         
+        robot_current_position = robot_controller._get_Position()
+        print("[INFO] Robot Position: X : {:.2f}, Y : {:.2f}, Z : {:.2f}".format(*robot_current_position))
+        
+        robot_offset = [
+            robot_current_position[0] - initial_robot_global_position[0],
+            robot_current_position[1] - initial_robot_global_position[1],
+            robot_current_position[2] - initial_robot_global_position[2]
+        ]
+        
+        robot_relative_position = [
+            robot_offset[0] + (initial_robot_global_position[0] - min_coords[0]),
+            robot_offset[1] + (initial_robot_global_position[1] - min_coords[1]),
+            robot_offset[2] + (initial_robot_global_position[2] - min_coords[2])
+        ]
+        
+        robot_relative_position[0] += (maze_size[0] / 2)
+        robot_relative_position[1] += (maze_size[1] / 2)
+        
+        print("[INFO] Robot Relative Position: X: {:.2f}, Y: {:.2f}, Z: {:.2f}".format(*robot_relative_position))
+
             
 if __name__ == '__main__':
     main()
