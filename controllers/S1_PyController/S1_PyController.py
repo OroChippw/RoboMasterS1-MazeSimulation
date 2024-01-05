@@ -9,7 +9,7 @@
 from controller import Robot , Keyboard , Supervisor
 from controller import Supervisor
 from controller import Camera , CameraRecognitionObject
-from math import sin , cos
+from math import sin , cos , atan2 , pi
 
 MAX_SPEED = 20
 SENSOR_THRESHOLD = 15 # sensitivity of sensors surrounding robot for obstacle detection
@@ -25,7 +25,7 @@ class RobotController():
         [0-fl-front left] [1-bl-back left] [2-fr-front right] [3-br-back right] 
     '''
     def __init__(self , robot , mode=None , timestep=32 ,max_speed=15 , 
-                 sensor_threshold=70) -> None:
+                 sensor_threshold=15) -> None:
         # <------ Properties ------>
         self.robot = robot
         self.robot_name = "RoboMasterS1"
@@ -54,7 +54,6 @@ class RobotController():
         self.w = 0
         self.current_key = None # Capture keyboard signals
         self.current_pitch_angle = None
-        self.avoidObstacleCounter = 0
         
         # <------ Device 、Motors and Sensors ------>
         self.keyboard = None
@@ -73,6 +72,10 @@ class RobotController():
         # <------ Thresholds ------>
         self.max_speed = max_speed
         self.sensor_threshold = sensor_threshold
+        
+        # <------ Signal ------>
+        self.prev_signal = None  # 用于存储上一个返回的信号
+        self.distance_stack = []  # 用于存储N步操作距离的栈结构
         
         self._init_component()
         
@@ -260,7 +263,7 @@ class RobotController():
         if self.status != self.temp:
             self.statusChanged = True
         
-        self.temp = self.status
+        self.temp = self.status                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  
 
     def _set_Mecanum_Velocoty(self):
         if (self.status == "Forward" or self.status == "Backward"):
@@ -268,15 +271,11 @@ class RobotController():
             self.wheels_Motors[1].setVelocity(self.Vx)
             self.wheels_Motors[2].setVelocity(self.Vy)
             self.wheels_Motors[3].setVelocity(self.Vy)
-            if self.statusChanged:
-                print(f"[INFO] fl:{self.Vx} ; bl:{self.Vx} ; fr :{self.Vy} ; br : {self.Vy}")
         elif (self.status == "Pan Left" or self.status == "Pan Right"):
             self.wheels_Motors[0].setVelocity(self.Vx)
             self.wheels_Motors[1].setVelocity(self.Vy)
             self.wheels_Motors[2].setVelocity(self.Vy)
             self.wheels_Motors[3].setVelocity(self.Vx)
-            if self.statusChanged:
-                print(f"[INFO] fl:{self.Vx} ; bl:{self.Vy} ; fr :{self.Vy} ; br : {self.Vx}")
         elif (self.status == "Rotate Counterclockwise" or self.status == "Rotate Clockwise"):
             w = self.w
             if (self.status == "Rotate Counterclockwise"):
@@ -292,9 +291,9 @@ class RobotController():
             # Set individual wheel velocities
             for i in range(len(wheel_velocities)):
                 self.wheels_Motors[i].setVelocity(min(wheel_velocities[i] , self.wheels_MaxSpeeds[i]))
-            if self.statusChanged:
-                print(f"[INFO] fl:{wheel_velocities[0]} ; bl:{wheel_velocities[1]} ; \
-                    fr :{wheel_velocities[2]} ; br : {wheel_velocities[3]} ; w : {self.w}")
+            # if self.statusChanged:
+            #     print(f"[INFO] fl:{wheel_velocities[0]} ; bl:{wheel_velocities[1]} ; \
+            #         fr :{wheel_velocities[2]} ; br : {wheel_velocities[3]} ; w : {self.w}")
     
     def _get_Sensors_Values(self , idx = None , compont = None):
         '''
@@ -338,8 +337,19 @@ class RobotController():
             
         return
     
-    def _explore_maze_algorithm(self , direction=0 , distance=0 , distanceThreshold=2 , 
-                                min_coords=None , max_coords=None , maze_size=None):
+    def _collect_MazeInfo(self , wall_nodes , maze_size , maze_center_point):
+        self.wall_nodes = wall_nodes
+        self.maze_size = maze_size
+        self.maze_center_point = maze_center_point
+        
+    def _distance_to_wall(self, robot_position, wall_node):
+        wall_position = wall_node.getPosition()
+        return ((robot_position[0] - wall_position[0]) ** 2 +
+                (robot_position[1] - wall_position[1]) ** 2) ** 0.5
+    
+    
+    def _explore_maze_algorithm(self , distanceThreshold=3.0 , 
+                num_closest_walls=5):
         '''
             Func : 
                 Get any available information to complete the maze exploration
@@ -353,40 +363,55 @@ class RobotController():
         body_sensor_values = self._get_Sensors_Values(idx = 0 , compont="body")
         print("[INFO] Body Front-mid values : {:.2f}".format(body_sensor_values))
         
-        fl_sensor_values = self._get_Sensors_Values(idx=0 , compont="wheels")
-        print("[INFO] Front-Left values : {:.2f}".format(fl_sensor_values))
-        
-        fr_sensor_values = self._get_Sensors_Values(idx=2 , compont="wheels")
-        print("[INFO] Front-Right values : {:.2f}".format(fr_sensor_values))
-        
         robot_current_position = self._get_Position()
-        # print("[INFO] Robot Position: X : {:.2f}, Y : {:.2f}, Z : {:.2f}".format(*robot_current_position))
+        print("[INFO] Robot Position: X : {:.2f}, Y : {:.2f}, Z : {:.2f}".format(*robot_current_position))
         
-        obstacle_left = fl_sensor_values > self.sensor_threshold
-        obstacle_right = fr_sensor_values > self.sensor_threshold
-        
-        robot_offset = [
-            robot_current_position[0] - self.initial_robot_global_position[0],
-            robot_current_position[1] - self.initial_robot_global_position[1],
-            robot_current_position[2] - self.initial_robot_global_position[2]
-        ]
-        
-        robot_relative_position = [
-            robot_offset[0] + (self.initial_robot_global_position[0] - min_coords[0]),
-            robot_offset[1] + (self.initial_robot_global_position[1] - min_coords[1]),
-            robot_offset[2] + (self.initial_robot_global_position[2] - min_coords[2])
-        ]
-        
-        robot_relative_position[0] += (maze_size[0] / 2)
-        robot_relative_position[1] += (maze_size[1] / 2)
-        # print("[INFO] Robot Relative Position: X: {:.2f}, Y: {:.2f}, Z: {:.2f}".format(*robot_relative_position))
+        obstacles_info = []
         
         if (body_sensor_values > distanceThreshold):
-            return 87
-        else :
-            return None
-    
-    
+            return ord('W')
+        
+        # 仅考虑距离机器人最近的若干个墙体
+        closest_walls = sorted(self.wall_nodes, key=lambda wall_node: self._distance_to_wall(robot_current_position, wall_node))[:num_closest_walls]
+        
+        for wall_node in closest_walls:
+            wall_position = wall_node.getPosition()
+            dx = wall_position[0] - robot_current_position[0]
+            dy = wall_position[1] - robot_current_position[1]
+            angle_to_wall = atan2(dy, dx) * (180 / pi)
+            
+            distance_to_wall = ((robot_current_position[0] - wall_position[0]) ** 2 +
+                            (robot_current_position[1] - wall_position[1]) ** 2) ** 0.5
+
+            wall_name = wall_node.getField('name').getSFString()
+            
+            obstacle_info = {'name': wall_name, 'distance': distance_to_wall, 'angle': angle_to_wall}
+            obstacles_info.append(obstacle_info)
+            
+            if distance_to_wall < distanceThreshold:
+                print("[INFO] 机器人附近检测到障碍物！名称：{}，距离：{:.2f}，角度：{:.2f}度".format(wall_name, distance_to_wall, angle_to_wall))
+                # 判断左右方向是否也有障碍物
+                left_obstacle = any(-90 <= info['angle'] <= -45 for info in obstacles_info)
+                right_obstacle = any(30 <= info['angle'] <= 90 for info in obstacles_info)
+                print(f"left_obstacle : {left_obstacle} , right_obstacle : {right_obstacle}")
+                
+                 # 判断机器人朝向是否与 y 轴近似平行
+                robot_angle_to_y_axis = atan2(robot_current_position[1], robot_current_position[0]) * (180 / pi)
+                print("abs(robot_angle_to_y_axis) : " , abs(robot_angle_to_y_axis))
+                if left_obstacle and right_obstacle:
+                    if (abs(robot_angle_to_y_axis) < 30):
+                        self.prev_signal = ord('A')
+                        return ord('A')  # 机器人后退
+                    else:
+                        return self.prev_signal
+                elif right_obstacle:
+                    self.prev_signal = ord('Q')
+                    return ord('Q')  # 机器人左转
+                elif left_obstacle:
+                    self.prev_signal = ord('E')
+                    return ord('E')  # 机器人右转
+                
+        
 def main():
     # <------ Instructions Introduction ------>
     # create the Robot instance.
@@ -433,13 +458,12 @@ def main():
     robot_controller = RobotController(
         robot , max_speed=MAX_SPEED , sensor_threshold=SENSOR_THRESHOLD)
     robot_controller._instructions_intro()
-    
+    robot_controller._collect_MazeInfo(
+        wall_nodes=wall_nodes , maze_size=maze_size , maze_center_point=center_point)
     # <------ Main loop ------>
     # perform simulation steps until Webots is stopping the controller
     while robot.step(timestep) != -1:
-        command = robot_controller._explore_maze_algorithm(
-            min_coords=min_coords , maze_size=maze_size
-        )
+        command = robot_controller._explore_maze_algorithm()
         robot_controller._keyboard_catcher(command)
         robot_controller._set_Mecanum_Velocoty()
         

@@ -1,0 +1,217 @@
+#VRML_SIM R2023b utf8
+# license: Apache License 2.0
+# license url: http://www.apache.org/licenses/LICENSE-2.0
+# This is a proto file for Webots for the E:/OroChiLab/RoboMasterS1-MazeSimulation-master/worlds/Robot.urdf
+# Extracted from: E:\OroChiLab\RoboMasterS1-MazeSimulation-master\worlds\Robot.urdf
+
+PROTO E:/OroChiLab/RoboMasterS1-MazeSimulation-master/worlds/Robot.urdf [
+  field  SFVec3f     translation     0 0 0
+  field  SFRotation  rotation        0 0 1 0
+  field  SFString    name            "E:/OroChiLab/RoboMasterS1-MazeSimulation-master/worlds/Robot.urdf"  # Is `Robot.name`.
+  field  SFString    controller      "void"                                                               # Is `Robot.controller`.
+  field  MFString    controllerArgs  []                                                                   # Is `Robot.controllerArgs`.
+  field  SFString    customData      ""                                                                   # Is `Robot.customData`.
+  field  SFBool      supervisor      FALSE                                                                # Is `Robot.supervisor`.
+  field  SFBool      synchronization TRUE                                                                 # Is `Robot.synchronization`.
+  field  SFBool      selfCollision   FALSE                                                                # Is `Robot.selfCollision`.
+  field  SFBool      staticBase      TRUE                                                                 # Defines if the robot base should be pinned to the static environment.
+]
+{
+  Robot {
+    translation IS translation
+    rotation IS rotation
+    controller IS controller
+    controllerArgs IS controllerArgs
+    customData IS customData
+    supervisor IS supervisor
+    synchronization IS synchronization
+    selfCollision IS selfCollision
+    children [
+      HingeJoint {
+        jointParameters HingeJointParameters {
+          axis -0.000000 1.000000 0.000001
+          anchor -0.110000 -0.100000 -0.015000
+        }
+        device [
+          RotationalMotor {
+            name "wheel_bl_motor"
+            maxVelocity 20.0
+            maxTorque 10.0
+          }
+          PositionSensor {
+            name "wheel_bl_motor_sensor"
+          }
+        ]
+        endPoint Solid {
+          translation -0.110000 -0.100000 -0.015000
+          rotation 0.998427 -0.039644 0.039644 1.572374
+          children [
+            Pose {
+              translation 0.000000 -0.000001 -0.194000
+              rotation 0.000000 0.000000 1.000000 0.000003
+              children [
+                Shape {
+                  appearance PBRAppearance {
+                    baseColor 0.500000 0.500000 0.500000
+                    roughness 1.000000
+                    metalness 0
+                  }
+                  geometry Cylinder {
+                    radius 0.058
+                    height 0.04
+                  }
+                }
+              ]
+            }
+          ]
+          name "solid(3)"
+          boundingObject Cylinder {
+            radius 0.058
+            height 0.04
+          }
+          physics Physics {
+          }
+        }
+      }
+      HingeJoint {
+        jointParameters HingeJointParameters {
+          axis 0.000000 1.000000 0.000001
+          anchor -0.110000 0.099999 -0.209000
+        }
+        device [
+          RotationalMotor {
+            name "wheel_br_motor"
+            maxVelocity 20.0
+            maxTorque 10.0
+          }
+          PositionSensor {
+            name "wheel_br_motor_sensor"
+          }
+        ]
+        endPoint Solid {
+          translation -0.110000 0.099999 -0.209000
+          rotation 0.089763 0.704251 -0.704253 2.962548
+          children [
+            Pose {
+              translation 0.000000 0.000001 0.194000
+              rotation 0.000000 0.000000 1.000000 0.000003
+              children [
+                Shape {
+                  appearance PBRAppearance {
+                    baseColor 0.500000 0.500000 0.500000
+                    roughness 1.000000
+                    metalness 0
+                  }
+                  geometry Cylinder {
+                    radius 0.058
+                    height 0.04
+                  }
+                }
+              ]
+            }
+          ]
+          name "solid(1)"
+          boundingObject Cylinder {
+            radius 0.058
+            height 0.04
+          }
+          physics Physics {
+          }
+        }
+      }
+      HingeJoint {
+        jointParameters HingeJointParameters {
+          axis -0.000000 1.000000 0.000001
+          anchor 0.110000 -0.099999 0.179000
+        }
+        device [
+          RotationalMotor {
+            name "wheel_fr_motor"
+            maxVelocity 20.0
+            maxTorque 10.0
+          }
+          PositionSensor {
+            name "wheel_fr_motor_sensor"
+          }
+        ]
+        endPoint Solid {
+          translation 0.110000 -0.099999 0.179000
+          rotation 0.998427 -0.039644 0.039644 1.572374
+          children [
+            Pose {
+              translation 0.000000 0.000000 -0.006000
+              rotation 0.000000 0.000000 1.000000 0.000003
+              children [
+                Shape {
+                  appearance PBRAppearance {
+                    baseColor 0.500000 0.500000 0.500000
+                    roughness 1.000000
+                    metalness 0
+                  }
+                  geometry Cylinder {
+                    radius 0.058
+                    height 0.04
+                  }
+                }
+              ]
+            }
+          ]
+          name "solid(2)"
+          boundingObject Cylinder {
+            radius 0.058
+            height 0.04
+          }
+          physics Physics {
+          }
+        }
+      }
+      HingeJoint {
+        jointParameters HingeJointParameters {
+          axis -0.000000 1.000000 -0.000000
+          anchor 0.110000 0.100000 -0.021000
+        }
+        device [
+          RotationalMotor {
+            name "wheel_fl_motor"
+            maxVelocity 20.0
+            maxTorque 10.0
+          }
+          PositionSensor {
+            name "wheel_fl_motor_sensor"
+          }
+        ]
+        endPoint Solid {
+          translation 0.110000 0.100000 -0.021000
+          rotation -0.089763 -0.704251 0.704253 3.320639
+          children [
+            Pose {
+              translation 0.000000 0.000000 0.006000
+              rotation 0.000000 0.000000 1.000000 0.000003
+              children [
+                Shape {
+                  appearance PBRAppearance {
+                    baseColor 0.500000 0.500000 0.500000
+                    roughness 1.000000
+                    metalness 0
+                  }
+                  geometry Cylinder {
+                    radius 0.058
+                    height 0.04
+                  }
+                }
+              ]
+            }
+          ]
+          name "solid"
+          boundingObject Cylinder {
+            radius 0.058
+            height 0.04
+          }
+          physics Physics {
+          }
+        }
+      }
+    ]
+    name IS name
+  }
+}

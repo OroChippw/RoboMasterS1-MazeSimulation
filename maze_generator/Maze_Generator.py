@@ -9,7 +9,7 @@ import os.path as osp
 
 class MazeGenerator():
     def __init__(self , m=4 , n=4 , title_size=10 , 
-                 save_path="output" , save_name="maze.wbt") -> None:
+                 save_path="worlds" , save_name="maze.wbt") -> None:
         self.maze = None
         self.m = m
         self.n = n        
@@ -229,9 +229,12 @@ class MazeGenerator():
                 "    } \n"
                 "    TexturedBackground { \n"
                 "    } \n"
+                "    DEF Maze01 Group { \n"
+                "    children [ \n"
             )
             
             counter = 0
+            
             # Horizontal
             for i in range(self.M):
                 for j in range(self.N - 1):
@@ -251,7 +254,10 @@ class MazeGenerator():
                             f"Wall {{\n  translation {(-j + self.N / 2) * self.unit_size} {(i + 0.5 - self.M / 2) * self.unit_size} 0 \n  rotation 0 1 0 0 \n  size 0.1 {size_y} 0.4 \n name \" wall({counter})\" \n  }}\n"
                         )
                         counter += 1
-            
+            out.write(
+                "       ] \n"
+                "    } \n"
+            )
         for i in range(self.M):
             for j in range(self.N):
                 print(self.maze[i][j], end=' ')
