@@ -17,7 +17,7 @@ class MazeGenerator():
         self.N = 2 * n + 1
         
         self.title_size = title_size
-        self.unit_size = title_size / 20
+        self.unit_size = title_size / 35
         
         self.save_path = save_path
         self.save_name = save_name
@@ -36,7 +36,6 @@ class MazeGenerator():
         for idx , cell in enumerate(cell_list):
             if cell[1][0] == x and cell[1][1] == y:
                 return idx
-        # print(f"[ERROR] Couldn't find the index ({x} , {y})")
         
         return -1
     
@@ -123,51 +122,107 @@ class MazeGenerator():
         while n_visited < (self.m * self.n):
             neighbours = []
             
-            # North
+            # # North
+            # if stack[-1][1][0] > 1:
+            #     if self.maze[stack[-1][1][0] - 2][stack[-1][1][1] + 0] and not visited[self._get_idx(stack[-1][1][0] - 2, stack[-1][1][1] + 0, cell_list)]:
+            #         neighbours.append(0)
+            # # East
+            # if stack[-1][1][1] < self.N - 2:
+            #     if self.maze[stack[-1][1][0] + 0][stack[-1][1][1] + 2] and not visited[self._get_idx(stack[-1][1][0] + 0, stack[-1][1][1] + 2, cell_list)]:
+            #         neighbours.append(1)
+            # # South
+            # if stack[-1][1][0] < self.M - 2:
+            #     if self.maze[stack[-1][1][0] + 2][stack[-1][1][1] + 0] and not visited[self._get_idx(stack[-1][1][0] + 2, stack[-1][1][1] + 0, cell_list)]:
+            #         neighbours.append(2)
+            # # West
+            # if stack[-1][1][1] > 1:
+            #     if self.maze[stack[-1][1][0] + 0][stack[-1][1][1] - 2] and not visited[self._get_idx(stack[-1][1][0] + 0, stack[-1][1][1] - 2, cell_list)]:
+            #         neighbours.append(3)
+
+            # # Remove neighbours that are already in the stack
+            # # neighbours = [dir for dir in neighbours if cell_list[self._get_idx(stack[-1][1][0] + (dir == 2) - (dir == 0), stack[-1][1][1] + (dir == 1) - (dir == 3), cell_list)][0] not in stack]
+            
+            # if neighbours:
+            #     next_cell_dir = random.choice(neighbours)
+
+            #     if next_cell_dir == 0:  # North
+            #         self.maze[stack[-1][1][0] - 1][stack[-1][1][1] + 0] = ' '
+            #         stack.append(cell_list[self._get_idx(stack[-1][1][0] - 2, stack[-1][1][1] + 0, cell_list)])
+            #     elif next_cell_dir == 1:  # East
+            #         self.maze[stack[-1][1][0] + 0][stack[-1][1][1] + 1] = ' '
+            #         stack.append(cell_list[self._get_idx(stack[-1][1][0] + 0, stack[-1][1][1] + 2, cell_list)])
+            #     elif next_cell_dir == 2:  # South
+            #         self.maze[stack[-1][1][0] + 1][stack[-1][1][1] + 0] = ' '
+            #         stack.append(cell_list[self._get_idx(stack[-1][1][0] + 2, stack[-1][1][1] + 0, cell_list)])
+            #     elif next_cell_dir == 3:  # West
+            #         self.maze[stack[-1][1][0] + 0][stack[-1][1][1] - 1] = ' '
+            #         stack.append(cell_list[self._get_idx(stack[-1][1][0] + 0, stack[-1][1][1] - 2, cell_list)])
+                
+                
+            #     visited[stack[-1][0]] = True
+            #     n_visited += 1
+            # else:
+            #     stack.pop()
+            
+            # 北
             if stack[-1][1][0] > 1:
-                if self.maze[stack[-1][1][0] - 2][stack[-1][1][1] + 0] and not visited[self._get_idx(stack[-1][1][0] - 2, stack[-1][1][1] + 0, cell_list)]:
+                if (
+                    self.maze[stack[-1][1][0] - 2][stack[-1][1][1] + 0] == ' ' and
+                    not visited[self._get_idx(stack[-1][1][0] - 2, stack[-1][1][1] + 0, cell_list)]
+                ):
                     neighbours.append(0)
-            # East
+            # 东
             if stack[-1][1][1] < self.N - 2:
-                if self.maze[stack[-1][1][0] + 0][stack[-1][1][1] + 2] and not visited[self._get_idx(stack[-1][1][0] + 0, stack[-1][1][1] + 2, cell_list)]:
+                if (
+                    self.maze[stack[-1][1][0] + 0][stack[-1][1][1] + 2] == ' ' and
+                    not visited[self._get_idx(stack[-1][1][0] + 0, stack[-1][1][1] + 2, cell_list)]
+                ):
                     neighbours.append(1)
-            # South
+            # 南
             if stack[-1][1][0] < self.M - 2:
-                if self.maze[stack[-1][1][0] + 2][stack[-1][1][1] + 0] and not visited[self._get_idx(stack[-1][1][0] + 2, stack[-1][1][1] + 0, cell_list)]:
+                if (
+                    self.maze[stack[-1][1][0] + 2][stack[-1][1][1] + 0] == ' ' and
+                    not visited[self._get_idx(stack[-1][1][0] + 2, stack[-1][1][1] + 0, cell_list)]
+                ):
                     neighbours.append(2)
-            # West
+            # 西
             if stack[-1][1][1] > 1:
-                if self.maze[stack[-1][1][0] + 0][stack[-1][1][1] - 2] and not visited[self._get_idx(stack[-1][1][0] + 0, stack[-1][1][1] - 2, cell_list)]:
+                if (
+                    self.maze[stack[-1][1][0] + 0][stack[-1][1][1] - 2] == ' ' and
+                    not visited[self._get_idx(stack[-1][1][0] + 0, stack[-1][1][1] - 2, cell_list)]
+                ):
                     neighbours.append(3)
 
-            # Remove neighbours that are already in the stack
-            # neighbours = [dir for dir in neighbours if cell_list[self._get_idx(stack[-1][1][0] + (dir == 2) - (dir == 0), stack[-1][1][1] + (dir == 1) - (dir == 3), cell_list)][0] not in stack]
-            
             if neighbours:
                 next_cell_dir = random.choice(neighbours)
 
-                if next_cell_dir == 0:  # North
+                if next_cell_dir == 0:  # 北
                     self.maze[stack[-1][1][0] - 1][stack[-1][1][1] + 0] = ' '
                     stack.append(cell_list[self._get_idx(stack[-1][1][0] - 2, stack[-1][1][1] + 0, cell_list)])
-                elif next_cell_dir == 1:  # East
+                elif next_cell_dir == 1:  # 东
                     self.maze[stack[-1][1][0] + 0][stack[-1][1][1] + 1] = ' '
                     stack.append(cell_list[self._get_idx(stack[-1][1][0] + 0, stack[-1][1][1] + 2, cell_list)])
-                elif next_cell_dir == 2:  # South
+                elif next_cell_dir == 2:  # 南
                     self.maze[stack[-1][1][0] + 1][stack[-1][1][1] + 0] = ' '
                     stack.append(cell_list[self._get_idx(stack[-1][1][0] + 2, stack[-1][1][1] + 0, cell_list)])
-                elif next_cell_dir == 3:  # West
+                elif next_cell_dir == 3:  # 西
                     self.maze[stack[-1][1][0] + 0][stack[-1][1][1] - 1] = ' '
                     stack.append(cell_list[self._get_idx(stack[-1][1][0] + 0, stack[-1][1][1] - 2, cell_list)])
-                
-                
+
                 visited[stack[-1][0]] = True
                 n_visited += 1
             else:
                 stack.pop()
             
-        self.maze[start_x + 1][start_y] = ' '
+        # self.maze[start_x + 1][start_y] = ' '
         self.maze[end_x - 1][end_y] = ' '
-
+        
+        with open('maze.txt', 'w') as file:
+            for row in self.maze:
+                for char in row:
+                    file.write(char)
+                file.write('\n')
+                
         return 
         
     def _display_maze(self):
@@ -217,8 +272,8 @@ class MazeGenerator():
                 "    ] \n"
                 "    } \n"
                 "    Viewpoint { \n"
-                "    orientation -0.2533698099047507 -0.13341086831684887 0.9581259205573007 4.076081923379274 \n"
-                "    position -3.110160230052604 -1.5631316631937642 1.13895648594493 \n"
+                "    orientation -0.5599798946516075 -0.5480830801291969 0.6213110773695147 4.234322379284112 \n"
+                "    position -4.866572795487261 4.926055728246928 41.17044666200551 \n"
                 "   } \n"
                 "    RectangleArena { \n"
                 "    translation -0.1 0.16 0 \n"
@@ -239,7 +294,7 @@ class MazeGenerator():
             for i in range(self.M):
                 for j in range(self.N - 1):
                     if (self.maze[i][j] == '#' and self.maze[i][j + 1] == '#'):
-                        size_x = 0.5 if self.maze[i][j] == '#' and self.maze[i][j + 1] == '#' else 0.01
+                        size_x = 0.4 if self.maze[i][j] == '#' and self.maze[i][j + 1] == '#' else 0.1
                         out.write(
                             f"Wall {{  \n translation {(-j - 0.5 + self.N / 2) * self.unit_size}  {(i - self.M / 2) * self.unit_size} 0 \n rotation 0 1 0 0 \n size {size_x} 0.1 0.4 \n name \" wall({counter})\" \n}}\n"
                         )
@@ -249,7 +304,7 @@ class MazeGenerator():
             for i in range(self.M - 1):
                 for j in range(self.N):
                     if (self.maze[i][j] == '#' and self.maze[i + 1][j] == '#'):
-                        size_y = 0.5 if self.maze[i][j] == '#' and self.maze[i + 1][j] == '#' else 0.01
+                        size_y = 0.4 if self.maze[i][j] == '#' and self.maze[i + 1][j] == '#' else 0.1
                         out.write(
                             f"Wall {{\n  translation {(-j + self.N / 2) * self.unit_size} {(i + 0.5 - self.M / 2) * self.unit_size} 0 \n  rotation 0 1 0 0 \n  size 0.1 {size_y} 0.4 \n name \" wall({counter})\" \n  }}\n"
                         )
@@ -262,25 +317,7 @@ class MazeGenerator():
             for j in range(self.N):
                 print(self.maze[i][j], end=' ')
             print()
-    
-    # def _generate_robot(self , robot_filepath):
-    #     """
-    #         Func :    
-    #         Args :   
-    #         Return :   
-    #     """
-    #     assert robot_filepath.lower().endswith(".txt"), \
-    #         f"[ERROR] "
-    #     with open(robot_filepath , "r") as robot_file , open(self.filename , 'w') as out:
-    #         for line in robot_file:
-    #             modified_line = line.replace('"', r'\"')
-    #             modified_line = '"' + modified_line.strip() + '\\n"\n'
-    #             out.write(modified_line)
-                
-    #     print("[INFO] Here's the robot you asked for. A maze.wbt has been created. Enjoy! :D")
-        
-    #     return 
-                
+                    
 def main():
     # <------ Parameter Settings ------>
     # GENERATE_ROBOT = False

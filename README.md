@@ -42,6 +42,8 @@
 |  S  | Backward | Make the S1 model move vertically backword |
 |  A  | Pan Left | Make the S1 model horizontally to the left |
 |  D  | Pan Right | Make the S1 model horizontally to the right |
+| Q | Turn left around the center of the chassis | Make the S1 model turn left around the center of the chassis |
+| E | Turn right around the center of the chassis | Make the S1 model turn right around the center of the chassis |
 |  ↑  | Pitch axis raised | Increase the pitch angle of the S1 model shooter |
 |  ↓  | Pitch axis down | Decrease the pitch angle of the S1 model launcher |
 |  ←  | YAW axis rotates clockwise | Make the S1 model gimbal rotate clockwise (yaw angle increases) |
@@ -90,7 +92,7 @@ $ python Maze_Generator.py
 * Please do not modify the content of the WorldInfo part of the _display_maze function in Maze_Generator.py at will, which may cause the coordinate system to be confused or the Mecanum wheel to be unable to achieve left/right translation.
 
 #### How to import S1 models in maze?
-​    Since there are too many points in the S1 model, it cannot be imported directly like in WorldInfo. A better solution has not yet been found. Currently, copy-paste is still used to paste all the text in RoboMaster.txt into the generated maze. wbt file end, and manually bind the controller
+​    Since there are too many points in the S1 model, it cannot be imported directly like in WorldInfo. A better solution has not yet been found. Currently, copy-paste is still used to paste all the text in robot.wbt into the generated maze. wbt file end, and manually bind the controller
 
 
 ## Tutorials
