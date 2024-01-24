@@ -423,15 +423,102 @@ class RobotController():
     def _find_path_with_direction(self , maze=None):
         '''
             Func : 
-                规划走出迷宫的路径
+                规划走出迷宫的路径     
         '''
-        return None
+        def dfs(x, y, path):
+            if x < 0 or x >= len(maze) or y < 0 or y >= len(maze[0]) or maze[x][y] == '#' or visited[x][y]:
+                return False
+
+            visited[x][y] = True
+            path.append((x, y))
+
+            if x == 1 and y == 1:  # 已经到达终点
+                return True
+
+            # 尝试向上、向下、向左、向右探索
+            if dfs(x - 1, y, path) or dfs(x + 1, y, path) or dfs(x, y - 1, path) or dfs(x, y + 1, path):
+                return True
+
+            # 若四个方向都无法到达终点，则回溯
+            path.pop()
+            return False
+
+        # 初始化访问数组
+        visited = [[False] * len(maze[0]) for _ in range(len(maze))]
+
+        # 从右下角开始深度优先搜索
+        path = []
+        start_x, start_y = len(maze) - 2, len(maze[0]) - 2
+        dfs(start_x, start_y, path)
+
+        # 从起点到终点的方向列表
+        directions = []
+        for i in range(1, len(path)):
+            prev_x, prev_y = path[i - 1]
+            current_x, current_y = path[i]
+
+            if current_x == prev_x:
+                if current_y > prev_y:
+                    directions.append('Right')
+                else:
+                    directions.append('Left')
+            elif current_y == prev_y:
+                if current_x > prev_x:
+                    directions.append('Backward')
+                else:
+                    directions.append('Forward')
+
+        merged_directions = [directions[0]]
+        for direction in directions[1:]:
+            if direction != merged_directions[-1]:
+                merged_directions.append(direction)
+        
+        self.origin_directions = merged_directions
+        self.merged_directions = merged_directions
+        self.direction_length = len(self.origin_directions)
+        self.prev_signal = merged_directions[0]
+        
+        # 返回反向的路径和方向信息，从起点到终点
+        return path[::-1], directions , merged_directions 
      
+    def _classify_rotation_direction(self , rotation_angle):
+        """
+            Func :
+                将机器人当前的旋转角度分为上下左右四个方向,x的负半轴为0度
+        """
+        angle_360 = (rotation_angle + 2 * pi) % (2 * pi) * 180 / pi  # 映射到0-360度范围
+        if 45 <= angle_360 < 135:
+            return 0 # 上
+        elif 135 <= angle_360 < 225:
+            return 3 # 右
+        elif 225 <= angle_360 < 315:
+            return 2 # 下
+        else:
+            return 1 # 左
+    
     def _delay(self , delay_ms):
         initTime = self.robot.getTime()
         while self.robot.step(self.timestep) != -1:
             if (self.robot.getTime() - initTime) * 1000.0 > delay_ms:
                 break
+    
+    def _update_merged_directions(self, current_rotation):
+        '''
+            Func :
+                根据机器人当前朝向更新 merged_directions,假设S1车头朝上对应的角度是 0 或 12π rad,指令说朝上，但相对小车行径方向是右
+                0-上，1左，2下，3右
+            Return :
+                返回经过映射更新后的新directions
+        '''
+        angle_mapping = {
+            0: {'Forward': 'Forward', 'Backward': 'Backward', 'Left': 'Left', 'Right': 'Right'},
+            1: {'Forward': 'Right', 'Backward': 'Left', 'Left': 'Forward', 'Right': 'Backward'},
+            2: {'Forward': 'Backward', 'Backward': 'Forward', 'Left': 'Right', 'Right': 'Left'},
+            3: {'Forward': 'Left', 'Backward': 'Right', 'Left': 'Backward', 'Right': 'Forward'},
+        }
+
+        updated_directions = [angle_mapping[current_rotation][dir] for dir in self.origin_directions]
+        return updated_directions
     
     def _explore_maze_algorithm(self , FrontdistanceThreshold=2.5 , 
                 LRdistanceThreshold=2.5):
@@ -445,7 +532,84 @@ class RobotController():
                 ASCII/Other，返回键盘的控制信号传入_keyboard_catcher中
         '''
 
-        signal = None
+        body_sensor_values = self._get_Sensors_Values(idx = 0 , compont="body")
+        left_sensor_values = self._get_Sensors_Values(idx = 2 , compont="body")
+        right_sensor_values = self._get_Sensors_Values(idx = 3 , compont="body")
+        
+        # 提供判断左右是否有障碍物的函数
+        left_obstacle = self._has_left_obstacle(left_sensor_values , LRdistanceThreshold)
+        right_obstacle = self._has_right_obstacle(right_sensor_values , LRdistanceThreshold)
+        
+        robot_current_rotation = self._get_Rotation()
+       
+        direct = self.merged_directions[self.direction_idx]
+        
+        if (direct == 'Left' or direct == "Right"):
+            if (self.prev_signal == ord('Q') or self.prev_signal == ord('E')): 
+                if (not self._is_approx_horizontal_or_vertical(robot_current_rotation[3])):
+                    self.is_rotating = True
+                    self.is_walking = False
+                    return self.prev_signal
+                else :
+                    # print("\n[INFO] Is Approx Horizontal or Vertical =》Set None")
+                    self.approx_horizontal_or_vertical_executed = True
+                    signal = None
+                    self.prev_signal = signal 
+                    self.is_walking = False
+                    self.is_rotating = False
+                    self.approx_horizontal_or_vertical_counter += 1
+                    rotation_idx = self._classify_rotation_direction(robot_current_rotation[3])
+                    if rotation_idx  != self.rotation_idx_temp:
+                        self.rotation_idx_temp = rotation_idx
+                        self.merged_directions = self._update_merged_directions(rotation_idx)
+                        print(f"[ORIGIN] origin_directions : {self.origin_directions}")
+                        print(f"[CHANGE] merged_directions : {self.merged_directions}")
+                    if self.approx_horizontal_or_vertical_counter > 0:
+                        self.approx_horizontal_or_vertical_counter = 0
+                        return signal
+            elif (direct == 'Right') : # 机器人右转
+                signal = ord('E')
+                self.prev_signal = signal
+                self.is_rotating = True
+                self.is_walking = None
+                # print(1 , end=" ")
+            elif (direct == 'Left') : # 机器人左转
+                signal = ord('Q')
+                self.prev_signal = signal
+                self.is_rotating = True
+                self.is_walking = None
+                # print(2 , end=" ")
+        elif (direct == 'Forward') :
+            angle_360 = (robot_current_rotation[3] + 2 * pi) % (2 * pi) * 180 / pi
+            # print(f"Enter Forward - rotation_idx : {angle_360}")
+            
+            if ((body_sensor_values > FrontdistanceThreshold)):
+                signal = ord('W')    
+                self.prev_signal = signal
+                self.is_rotating = False
+                self.is_walking = True
+                # print(0 , end=" ")
+            else:
+                # print("\n[INFO] FrontdistanceThreshold =》Set None")
+                signal = None
+                self.prev_signal = signal 
+                self.is_walking = False
+                self.is_rotating = False
+        elif (direct == 'Backward') :
+            rotation_idx = 2
+            self.merged_directions = self._update_merged_directions(rotation_idx)
+            # print(f"[ORIGIN] origin_directions : {self.origin_directions}")
+            # print(f"[CHANGE] merged_directions : {self.merged_directions}")
+            signal = ord('W')
+            self.prev_signal = signal
+            self.is_rotating = None
+            self.is_walking = True
+        
+        if (not self.is_walking) and (not self.is_rotating) and (self.prev_signal is None):
+            if (self.direction_idx < self.direction_length - 1):
+                self.direction_idx += 1
+                # print("Do direction_idx add")
+                # print(f"\n[Triplet = CHANGE] direction_idx : {self.direction_idx} , direction : {self.merged_directions[self.direction_idx]}")
         
         return signal
                 
@@ -475,8 +639,7 @@ def main():
     # <------ Main loop ------>
     # perform simulation steps until Webots is stopping the controller
     while robot.step(timestep) != -1:
-        # command = robot_controller._explore_maze_algorithm()
-        command = None
+        command = robot_controller._explore_maze_algorithm()
         robot_controller._keyboard_catcher(command)
         robot_controller._set_Mecanum_Velocoty()
         
